@@ -6,6 +6,14 @@ apex legends hax
 3. launch console app as administrator
 4.
 press 2 to unload driver
+
+
 press 3 for player only glow
+
+
 press 4 for all entity glow
+
+
 press 5 for only item glow
+
+
