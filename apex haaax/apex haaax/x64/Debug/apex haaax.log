@@ -1,9 +1,19 @@
 ﻿  Building 'apex haaax' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
   Stamping x64\Debug\apexhaaax.inf
-  Stamping [Version] section with DriverVer=03/01/2020,22.19.38.389
-  Driver.c
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.c(15,28): warning C4100: 'DriverObject': unreferenced formal parameter
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.c(55,40): warning C4242: 'function': conversion from 'SIZE_T' to 'ULONG', possible loss of data
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.c(125,16): warning C4189: 'lMaxSize': local variable is initialized but not referenced
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.c(146,12): error C4013: 'OpenEvents' undefined; assuming extern returning int
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.c(151,12): error C4013: 'DriverLoop' undefined; assuming extern returning int
+  Stamping [Version] section with DriverVer=04/10/2020,17.38.56.897
+  apex haaax.vcxproj -> C:\Users\jguo5\source\repos\apex haaax\x64\Debug\apexhaaax.sys
+  Driver is a Universal Driver.
+  .........................
+  Signability test complete.
+  
+  Errors:
+  None
+  
+  Warnings:
+  None
+  
+  Catalog generation complete.
+  C:\Users\jguo5\source\repos\apex haaax\x64\Debug\apex haaax\apexhaaax.cat
+  Done Adding Additional Store
+  Successfully signed: C:\Users\jguo5\source\repos\apex haaax\x64\Debug\apex haaax\apexhaaax.cat
+  

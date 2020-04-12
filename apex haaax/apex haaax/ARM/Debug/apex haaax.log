@@ -1,0 +1,51 @@
+﻿  Building 'apex haaax' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
+  Stamping ARM\Debug\apexhaaax.inf
+  Stamping [Version] section with DriverVer=04/10/2020,17.37.58.914
+  Driver.cpp
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18707,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18718,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18732,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18746,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18760,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18775,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18790,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18804,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18818,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18832,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18847,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18862,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(18877,5): error C3861: '_DataSynchronizationBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(19074,22): error C2065: 'CP15_TPIDRPRW': undeclared identifier
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(19074,22): error C3861: '_MoveFromCoprocessor': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(19105,5): error C3861: '_ReadWriteBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(19106,5): error C3861: 'MemoryBarrier': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(22605,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(24864,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(27238,9): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(27241,9): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(31407,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(31594,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(31939,40): error C3861: 'InterlockedExchangePointer': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(31988,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(32046,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(32112,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(35971,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(35996,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(36025,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(36053,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(36075,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(36093,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(36118,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(36141,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(36159,5): error C3861: 'DbgRaiseAssertionFailure': identifier not found
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\undocumented.h(13,1): warning C4141: 'dllimport': used more than once
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\undocumented.h(68,1): warning C4141: 'dllimport': used more than once
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\undocumented.h(83,1): warning C4141: 'dllimport': used more than once
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\undocumented.h(339,1): warning C4141: 'dllimport': used more than once
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\MmUnloadedDriversh.h(82,10): warning C4244: 'return': conversion from 'NTSTATUS' to 'BOOLEAN', possible loss of data
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.cpp(10,1): warning C4005: 'STANDARD_RIGHTS_ALL': macro redefinition
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(5208): message : see previous definition of 'STANDARD_RIGHTS_ALL'
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.cpp(114,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.cpp(466,29): warning C4244: '=': conversion from 'DWORD64' to 'DWORD', possible loss of data
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.cpp(507,19): warning C4456: declaration of 'Status' hides previous local declaration
+C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.cpp(426,11): message : see declaration of 'Status'

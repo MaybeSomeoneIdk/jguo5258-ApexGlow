@@ -4,6 +4,11 @@
 #define IMAGE_SCN_CNT_CODE 0x00000020
 #define IMAGE_SCN_MEM_EXECUTE 0x20000000
 #define IMAGE_SCN_MEM_DISCARDABLE 0x02000000
+#define IMAGE_NT_SIGNATURE 0x00004550
+#define IMAGE_DOS_SIGNATURE 0x5A4D // MZ
+
+#define STANDARD_RIGHTS_ALL 0x001F0000L
+
 
 //Allocate buffer for name of shared memory
 
@@ -13,8 +18,6 @@ SECURITY_DESCRIPTOR SecDescriptor;
 
 
 HANDLE sectionHandle;
-PVOID	pSharedSection = NULL;
-PVOID	pSectionObj = NULL;
 PVOID SharedSection = NULL;
 
 
@@ -24,32 +27,38 @@ DWORD ReadSignature[2] = { 0x2a92, 0x139b };
 
 DWORD localPlayer = 0x10F4F4;
 DWORD healthOffset = 0xF8;
-
-
+DWORD64 entAddress;
+DWORD64 OFFSET_ENTITYLIST = 0x1898f38;
+DWORD64 OFFSET_GLOW_ENABLE		=	0x390;
+DWORD64 OFFSET_GLOW_CONTEXT		=	0x310;
+DWORD64 OFFSET_GLOW_RANGE		=	0x2FC;
+DWORD64 OFFSET_GLOW_FADE		=	0x2B8;
+DWORD64 OFFSET_GLOW_COLORS		=	0x1D0;
+DWORD64 OFFSET_GLOW_MAGIC		=	0x278;
 
 
 struct RWProcessMemory
 {
 	DWORD Signature[2];
 	DWORD processPID;
-	DWORD Address;
-	DWORD SourceAddress;
-	float aimbotAngle[3];
+	DWORD64 Address;
+	DWORD64 SourceAddress;
+	float myFloat[10];
+	DWORD64 extra[16];
 };
 
+VOID driverUnload(IN PDRIVER_OBJECT pDriverObject) {
 
+	DbgPrint("Driver Unloading routine called! \n");
 
-VOID Unload(PDRIVER_OBJECT DriverObject)
-{
-	UNREFERENCED_PARAMETER(DriverObject);
-	DbgPrint("Driver unload \n");
+	if (SharedSection)
+		ZwUnmapViewOfSection(NtCurrentProcess(), SharedSection);
+
+	if (sectionHandle)
+		ZwClose(sectionHandle);
+
 }
 
-
-
-
-
-PVOID KernelBase;
 ULONG KernelSize;
 
 PVOID getKernelBase(OUT PULONG pSize)
@@ -117,13 +126,13 @@ PVOID getKernelBase(OUT PULONG pSize)
 				break;
 			}
 		}
-		DbgPrint("KernelSize : %i\n", KernelSize);
-		DbgPrintEx(0, 0, "g_KernelBase : %p\n", KernelBase);
 	}
 	if (arrayOfModules)
 		ExFreePoolWithTag(arrayOfModules, 0x454E4F45); // 'ENON'
 
-	return (PVOID)KernelSize;
+	DbgPrint("KernelSize : %i\n", KernelSize);
+	DbgPrint("g_KernelBase : %p\n", KernelBase);
+	return (PVOID)KernelBase;
 }
 
 
@@ -157,37 +166,44 @@ NTSTATUS BBSearchPattern(IN PCUCHAR pattern, IN UCHAR wildcard, IN ULONG_PTR len
 
 
 
-NTSTATUS ScanSection(IN PCUCHAR pattern, IN UCHAR wildcard, IN ULONG_PTR len, OUT PVOID* ppFound)
+NTSTATUS BBScanSection(IN PCCHAR section, IN PCUCHAR pattern, IN UCHAR wildcard, IN ULONG_PTR len, OUT PVOID* ppFound, PVOID base)
 {
-	ASSERT(ppFound != NULL);
+	//ASSERT(ppFound != NULL);
 	if (ppFound == NULL)
-		return STATUS_INVALID_PARAMETER;
+		return STATUS_ACCESS_DENIED; //STATUS_INVALID_PARAMETER
 
-	PVOID base = getKernelBase(NULL);
-	if (!base)
-		return STATUS_NOT_FOUND;
+	if (nullptr == base)
+		base = getKernelBase(NULL);
+	if (base == nullptr)
+		return STATUS_ACCESS_DENIED; //STATUS_NOT_FOUND;
 
-
-	PIMAGE_NT_HEADERS64 pHdr = RtlImageNtHeader(base);
+	PIMAGE_NT_HEADERS64 pHdr = (PIMAGE_NT_HEADERS64)RtlImageNtHeader(base);
 	if (!pHdr)
-		return STATUS_INVALID_IMAGE_FORMAT;
+		return STATUS_ACCESS_DENIED; // STATUS_INVALID_IMAGE_FORMAT;
 
-	PIMAGE_SECTION_HEADER pFirstSection = (PIMAGE_SECTION_HEADER)(pHdr + 1);
+	//PIMAGE_SECTION_HEADER pFirstSection = (PIMAGE_SECTION_HEADER)(pHdr + 1);
+	PIMAGE_SECTION_HEADER pFirstSection = (PIMAGE_SECTION_HEADER)((uintptr_t)&pHdr->FileHeader + pHdr->FileHeader.SizeOfOptionalHeader + sizeof(IMAGE_FILE_HEADER));
+
 	for (PIMAGE_SECTION_HEADER pSection = pFirstSection; pSection < pFirstSection + pHdr->FileHeader.NumberOfSections; pSection++)
 	{
-
-		if ((pSection->Characteristics & IMAGE_SCN_CNT_CODE) && (pSection->Characteristics & IMAGE_SCN_MEM_EXECUTE) || !(pSection->Characteristics & IMAGE_SCN_MEM_DISCARDABLE))
+		//DbgPrint("section: %s\r\n", pSection->Name);
+		ANSI_STRING s1, s2;
+		RtlInitAnsiString(&s1, section);
+		RtlInitAnsiString(&s2, (PCCHAR)pSection->Name);
+		if (RtlCompareString(&s1, &s2, TRUE) == 0)
 		{
 			PVOID ptr = NULL;
 			NTSTATUS status = BBSearchPattern(pattern, wildcard, len, (PUCHAR)base + pSection->VirtualAddress, pSection->Misc.VirtualSize, &ptr);
-			if (NT_SUCCESS(status))
-				*(PULONG)ppFound = (ULONG)((PUCHAR)ptr - (PUCHAR)base);
-
-			return status;
+			if (NT_SUCCESS(status)) {
+				*(PULONG64)ppFound = (ULONG_PTR)(ptr); //- (PUCHAR)base
+				//DbgPrint("found\r\n");
+				return status;
+			}
+			//we continue scanning because there can be multiple sections with the same name.
 		}
 	}
 
-	return STATUS_NOT_FOUND;
+	return STATUS_ACCESS_DENIED; //STATUS_NOT_FOUND;
 }
 
 
@@ -315,7 +331,7 @@ NTSTATUS CreateSharedMemory()
 		return Status;
 	}
 
-	SIZE_T sectionViewSize = 1024 * 10;
+	SIZE_T sectionViewSize = 1024 * 5;
 
 	Status = ZwMapViewOfSection(sectionHandle, NtCurrentProcess(), &SharedSection,
 		0, sectionViewSize, NULL, &sectionViewSize, ViewShare, 0, PAGE_READWRITE | PAGE_NOCACHE);
@@ -350,10 +366,10 @@ VOID ReadSharedMemory()
 	{
 		ZwUnmapViewOfSection(NtCurrentProcess(), SharedSection);
 	}
-	SIZE_T ulViewSize = 1024 * 10;
+	SIZE_T ViewSize = 1024 * 10;
 
 	NTSTATUS Status = ZwMapViewOfSection(sectionHandle, NtCurrentProcess(),
-		&SharedSection, 0, ulViewSize, NULL, &ulViewSize, ViewShare, 0, PAGE_READWRITE | PAGE_NOCACHE);
+		&SharedSection, 0, ViewSize, NULL, &ViewSize, ViewShare, 0, PAGE_READWRITE | PAGE_NOCACHE);
 
 	if (!NT_SUCCESS(Status))
 	{
@@ -367,9 +383,48 @@ VOID ReadSharedMemory()
 }
 
 
-DWORD BaseAddress;
+
+ULONG64 GetModuleBasex64(PEPROCESS proc, UNICODE_STRING module_name) {
+	PPEB pPeb = (PPEB)PsGetProcessPeb(proc); // get Process PEB, function is unexported and undoc
+
+	if (!pPeb) {
+		return 0; // failed
+	}
+
+	KAPC_STATE state;
+
+	KeStackAttachProcess(proc, &state);
+
+	PPEB_LDR_DATA pLdr = (PPEB_LDR_DATA)pPeb->Ldr;
+
+	if (!pLdr) {
+		KeUnstackDetachProcess(&state);
+		return 0; // failed
+	}
+
+	UNICODE_STRING name;
+
+	// loop the linked list
+	for (PLIST_ENTRY list = (PLIST_ENTRY)pLdr->ModuleListLoadOrder.Flink;
+		list != &pLdr->ModuleListLoadOrder; list = (PLIST_ENTRY)list->Flink) {
+		PLDR_DATA_TABLE_ENTRY pEntry =
+			CONTAINING_RECORD(list, LDR_DATA_TABLE_ENTRY, InLoadOrderModuleList);
+		if (RtlCompareUnicodeString(&pEntry->BaseDllName, &module_name, TRUE) ==
+			0) {
+			ULONG64 baseAddr = (ULONG64)pEntry->DllBase;
+			KeUnstackDetachProcess(&state);
+			return baseAddr;
+		}
+	}
+
+	KeUnstackDetachProcess(&state);
+
+	return 0; // failed
+}
+
+DWORD64 BaseAddress;
 DWORD ProcessID;
-NTSTATUS DriverLoop()
+NTSTATUS DispatchHandle()
 {
 
 	NTSTATUS Status = STATUS_SUCCESS;
@@ -378,25 +433,39 @@ NTSTATUS DriverLoop()
 	{
 		
 		LARGE_INTEGER Timeout;
-		Timeout.QuadPart = -10000000;
+		Timeout.QuadPart = -20000000;
 		KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
 		ReadSharedMemory();
+
 		if (strcmp((PCHAR)SharedSection, "Stop") == 0) //if string is equal
 		{
-			DbgPrint("stopping health write loop\n");
+			DbgPrint("stopping driver loop\n");
+			return Status;
 		}
 
-		if ((reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[0] == 0x2a92) && reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[1] == 0x139a) //check fake "IOCTL", 139a means health
+
+		if ((reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[0] == 0x2a92) && reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[1] == 0x1393) // check signature, 13 93 means glow
 		{
-			DbgPrint("Write Request\n");
+			DbgPrint("glow Request\n");
 			RWProcessMemory* WriteRequest = (RWProcessMemory*)SharedSection;
-			
+
 
 			PEPROCESS process;
-			WriteRequest->processPID = ProcessID;
 			Status = PsLookupProcessByProcessId((HANDLE)WriteRequest->processPID, &process);
+			
+			BaseAddress = (DWORD64)PsGetProcessSectionBaseAddress(process);
+			UNICODE_STRING ProcessName;
+			RtlInitUnicodeString(&ProcessName, L"r5apex.exe");
+			BaseAddress = GetModuleBasex64(process, ProcessName);
 
 
+			//pslookupprocessbyprocessid works
+
+		
+			WriteRequest->extra[5] = Status;
+			WriteRequest->extra[6] = BaseAddress;					/*	debug messsages		*/
+			WriteRequest->extra[7] = WriteRequest->processPID;
+			
 			if (NT_SUCCESS(Status))
 			{
 				DbgPrint("PsLookupProcessByProcessId succedd\n");
@@ -408,27 +477,63 @@ NTSTATUS DriverLoop()
 				ObDereferenceObject(process);
 				return Status;
 			}
+			DWORD64 i;
+			int type;
+			if (WriteRequest->extra[0] == 3) // if type is item only
+			{
+				i = 60;
+				type = 10000;
+			}
+			else if (WriteRequest->extra[0] == 60) //if the type is player only
+			{
+				i = 0;
+				type = 60;
 
+			}
+			else if (WriteRequest->extra[0] == 10000) // if type is player and item
+			{
+				i = 0;
+				type = 10000;
+			}
+			else
+			{
+				i = 0;
+				type = 10000;
+			}
 			SIZE_T Bytes;
-			DWORD health = 10000;
-			DWORD playerAddress = 0;
 
-			MmCopyVirtualMemory(process, (DWORD*)(BaseAddress + localPlayer), PsGetCurrentProcess(), &playerAddress, sizeof(DWORD), KernelMode, &Bytes);
-			Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &health, process, (DWORD*)(playerAddress + healthOffset), sizeof(health), KernelMode, &Bytes);
-
-
-		}
-		if ((reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[0] == 0x2a92) && reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[1] == 0x1391) // check signature, 1391 means get process id
-		{
 			
-			ProcessID = reinterpret_cast<RWProcessMemory*>(SharedSection)->Address;
-			DbgPrint("received Process ID %i\n", ProcessID);
-		}
-		if ((reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[0] == 0x2a92) && reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[1] == 0x1393) // check signature, 1393 means get base address
-		{
-			
-			BaseAddress = reinterpret_cast<RWProcessMemory*>(SharedSection)->Address;
-			DbgPrint("received Base Address! %i\n", BaseAddress);
+
+			NTSTATUS Status;
+
+
+
+			bool	glowEnable = true;
+			DWORD	glowContext = 1;
+			DWORD64 Dest;		//destination of memcpy for debugging
+
+
+			while (i < type)										//Loop through entity list ( I love this code section, it is so neat and easy to read)
+			{
+				Status = MmCopyVirtualMemory(process, reinterpret_cast<void*>(BaseAddress + OFFSET_ENTITYLIST + (i << 5)), IoGetCurrentProcess(), reinterpret_cast<void*>(&entAddress), sizeof(void*), UserMode, &Bytes);
+				//set ntstatus and address, for debugging 0-3 is ntstatus, 4-7 means address
+				// + OFFSET_ENTITYLIST + (i << 5);
+				WriteRequest->extra[8] = entAddress;
+				WriteRequest->extra[9] = Status;
+				WriteRequest->extra[10] = BaseAddress + OFFSET_ENTITYLIST + (i << 5);
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &glowEnable, process, (DWORD*)(entAddress + OFFSET_GLOW_ENABLE), sizeof(bool), KernelMode, &Bytes);
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &glowContext, process, (DWORD*)(entAddress + OFFSET_GLOW_CONTEXT), sizeof(int), KernelMode, &Bytes);
+
+				WriteRequest->extra[11] = entAddress + OFFSET_GLOW_CONTEXT;
+
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &WriteRequest->myFloat[0], process, (DWORD*)(entAddress + OFFSET_GLOW_COLORS), sizeof(DWORD[3]), KernelMode, &Bytes);
+
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &WriteRequest->myFloat[3], process, (DWORD*)(entAddress + OFFSET_GLOW_RANGE), sizeof(DWORD), KernelMode, &Bytes);
+			}
+
+
+
+				
 		}
 	}
 	return Status;
@@ -437,23 +542,101 @@ NTSTATUS DriverLoop()
 
 
 
+/*VOID glowThread(IN PVOID StartContext)
+{
+	DbgPrint("2nd thread start!!\n");
+	SIZE_T ViewSize = 1024 * 4;
+	LARGE_INTEGER ViewOffset = { 0 };
+	ViewOffset.HighPart = 0;
+	ViewOffset.LowPart = 1024 * 4;
+
+
+	ZwMapViewOfSection(sectionHandle, NtCurrentProcess(), &SharedSection, 0, ViewSize, &ViewOffset, &ViewSize, ViewUnmap, 0, PAGE_READWRITE | PAGE_NOCACHE);
+	
+	float r;
+	float g;
+	float b;
+
+} */
+
+
+
+
+
 NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
 	UNREFERENCED_PARAMETER(RegistryPath);
-	
-	DriverObject->DriverUnload = Unload;
+
+	LARGE_INTEGER Timeout;
+	Timeout.QuadPart = -20000000;
+
+	DriverObject->DriverUnload = driverUnload;
 
 	DbgPrint("driver load!!!!\n");
 
 	CreateSharedMemory();
 
+	BOOLEAN status1 = ClearPiddbCacheTable();
+
+	
+	KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
+
+	BOOLEAN status2 = cleanUnloadedDriverString();
+
+	if (status1 = FALSE)
+	{
+		DbgPrint("piddbcachetable fail\n");
+	}
+	if (status2 == FALSE)
+	{
+		DbgPrint("mmunloadeddrivers fail\n");
+	}
+	if (status1 != FALSE && status2 != FALSE)
+	{
+		DbgPrint("success with piddbcachetable mmunloadeddrivers\n");
+	}
 
 
-	DriverLoop();
+/*
+	PVOID Threadreference;
+	HANDLE glo_thread = 0;
+	OBJECT_ATTRIBUTES ThreadObject;
+	ThreadObject.Length = 24;
+	ThreadObject.RootDirectory = 0;
+	ThreadObject.ObjectName = 0;
+	ThreadObject.Attributes = 512;
+	ThreadObject.SecurityDescriptor = 0;
+	ThreadObject.SecurityQualityOfService = 0;
 
 
+	InitializeObjectAttributes(&ThreadObject, NULL, OBJ_KERNEL_HANDLE, NULL, NULL);
 
+	Status = PsCreateSystemThread(&glo_thread, (ACCESS_MASK)STANDARD_RIGHTS_ALL, &ThreadObject, 0, 0, (PKSTART_ROUTINE)glowThread, 0);
+	
+
+	if (!NT_SUCCESS(Status))
+	{
+		DbgPrint("pscreatesystemthread failed!!!\n");
+	}
+	else
+	{
+		DbgPrint("Pscreatesystemthread succeed!!!\n");
+	}
+
+	Status = ObReferenceObjectByHandle(glo_thread, THREAD_ALL_ACCESS, NULL,
+		KernelMode, &Threadreference, NULL);*/
+
+	if (!NT_SUCCESS(Status))
+	{
+		DbgPrint("getting pointer for thread failed!!\n");
+	}
+	else
+	{
+		DbgPrint("getting pointer for thread succed!!!\n");
+	}
+
+	DispatchHandle();
 	DbgPrint("driver load has success!!\n");
 	return Status;
 

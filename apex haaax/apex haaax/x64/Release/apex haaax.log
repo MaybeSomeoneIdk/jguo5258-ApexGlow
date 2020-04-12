@@ -1,16 +1,7 @@
 ﻿  Building 'apex haaax' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
   Stamping x64\Release\apexhaaax.inf
-  Stamping [Version] section with DriverVer=03/24/2020,17.18.11.594
-  Driver.cpp
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\undocumented.h(13,1): warning C4141: 'dllimport': used more than once
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\undocumented.h(35,1): warning C4141: 'dllimport': used more than once
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\undocumented.h(50,1): warning C4141: 'dllimport': used more than once
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\undocumented.h(239,1): warning C4141: 'dllimport': used more than once
-C:\Users\jguo5\source\repos\apex haaax\apex haaax\Driver.cpp(106,21): warning C4018: '<': signed/unsigned mismatch
+  Stamping [Version] section with DriverVer=04/11/2020,20.25.29.801
   apex haaax.vcxproj -> C:\Users\jguo5\source\repos\apex haaax\x64\Release\apexhaaax.sys
-  Done Adding Additional Store
-  Successfully signed: C:\Users\jguo5\source\repos\apex haaax\x64\Release\apexhaaax.sys
-  
   Driver is a Universal Driver.
   .........................
   Signability test complete.
