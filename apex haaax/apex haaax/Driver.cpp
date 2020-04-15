@@ -28,15 +28,13 @@ DWORD ReadSignature[2] = { 0x2a92, 0x139b };
 DWORD localPlayer = 0x10F4F4;
 DWORD healthOffset = 0xF8;
 DWORD64 entAddress;
-DWORD64 OFFSET_ENTITYLIST = 0x1898f38;
-DWORD64 OFFSET_GLOW_ENABLE		=	0x390;
+DWORD64 OFFSET_ENTITYLIST		=   0x1897f38;
+DWORD64 OFFSET_GLOW_ENABLE		=   0x380;
 DWORD64 OFFSET_GLOW_CONTEXT		=	0x310;
 DWORD64 OFFSET_GLOW_RANGE		=	0x2FC;
-DWORD64 OFFSET_GLOW_FADE		=	0x2B8;
-DWORD64 OFFSET_GLOW_COLORS		=	0x1D0;
-DWORD64 OFFSET_GLOW_MAGIC		=	0x278;
-
-
+DWORD64 OFFSET_GLOW_COLORS		=   0x1B8;
+DWORD64 OFFSET_GLOW_DURATION	=   0x2E8;
+DWORD64 OFFSET_HEALTH			=	0x3E0;
 struct RWProcessMemory
 {
 	DWORD Signature[2];
@@ -45,6 +43,7 @@ struct RWProcessMemory
 	DWORD64 SourceAddress;
 	float myFloat[10];
 	DWORD64 extra[16];
+	bool mybools[4];
 };
 
 VOID driverUnload(IN PDRIVER_OBJECT pDriverObject) {
@@ -384,46 +383,12 @@ VOID ReadSharedMemory()
 
 
 
-ULONG64 GetModuleBasex64(PEPROCESS proc, UNICODE_STRING module_name) {
-	PPEB pPeb = (PPEB)PsGetProcessPeb(proc); // get Process PEB, function is unexported and undoc
 
-	if (!pPeb) {
-		return 0; // failed
-	}
 
-	KAPC_STATE state;
-
-	KeStackAttachProcess(proc, &state);
-
-	PPEB_LDR_DATA pLdr = (PPEB_LDR_DATA)pPeb->Ldr;
-
-	if (!pLdr) {
-		KeUnstackDetachProcess(&state);
-		return 0; // failed
-	}
-
-	UNICODE_STRING name;
-
-	// loop the linked list
-	for (PLIST_ENTRY list = (PLIST_ENTRY)pLdr->ModuleListLoadOrder.Flink;
-		list != &pLdr->ModuleListLoadOrder; list = (PLIST_ENTRY)list->Flink) {
-		PLDR_DATA_TABLE_ENTRY pEntry =
-			CONTAINING_RECORD(list, LDR_DATA_TABLE_ENTRY, InLoadOrderModuleList);
-		if (RtlCompareUnicodeString(&pEntry->BaseDllName, &module_name, TRUE) ==
-			0) {
-			ULONG64 baseAddr = (ULONG64)pEntry->DllBase;
-			KeUnstackDetachProcess(&state);
-			return baseAddr;
-		}
-	}
-
-	KeUnstackDetachProcess(&state);
-
-	return 0; // failed
-}
-
+PDRIVER_OBJECT driverObject;
 DWORD64 BaseAddress;
 DWORD ProcessID;
+PEPROCESS process;
 NTSTATUS DispatchHandle()
 {
 
@@ -433,16 +398,28 @@ NTSTATUS DispatchHandle()
 	{
 		
 		LARGE_INTEGER Timeout;
-		Timeout.QuadPart = -20000000;
+		Timeout.QuadPart = -10000000;
 		KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
 		ReadSharedMemory();
 
 		if (strcmp((PCHAR)SharedSection, "Stop") == 0) //if string is equal
 		{
+			if (process)
+			{
+				ObDereferenceObject(process);
+			}
+			driverUnload(driverObject);
+		
+
 			DbgPrint("stopping driver loop\n");
+
 			return Status;
 		}
-
+		if ((reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[0] == 0x2a92) && reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[1] == 0x1392) // check signature, 13 92 means ProcessID send
+		{
+			RWProcessMemory* WriteRequest = (RWProcessMemory*)SharedSection;
+			ProcessID = WriteRequest->processPID;
+		}
 
 		if ((reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[0] == 0x2a92) && reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[1] == 0x1393) // check signature, 13 93 means glow
 		{
@@ -450,13 +427,9 @@ NTSTATUS DispatchHandle()
 			RWProcessMemory* WriteRequest = (RWProcessMemory*)SharedSection;
 
 
-			PEPROCESS process;
-			Status = PsLookupProcessByProcessId((HANDLE)WriteRequest->processPID, &process);
+			Status = PsLookupProcessByProcessId((HANDLE)ProcessID, &process);
 			
 			BaseAddress = (DWORD64)PsGetProcessSectionBaseAddress(process);
-			UNICODE_STRING ProcessName;
-			RtlInitUnicodeString(&ProcessName, L"r5apex.exe");
-			BaseAddress = GetModuleBasex64(process, ProcessName);
 
 
 			//pslookupprocessbyprocessid works
@@ -464,7 +437,7 @@ NTSTATUS DispatchHandle()
 		
 			WriteRequest->extra[5] = Status;
 			WriteRequest->extra[6] = BaseAddress;					/*	debug messsages		*/
-			WriteRequest->extra[7] = WriteRequest->processPID;
+			WriteRequest->extra[7] = ProcessID;
 			
 			if (NT_SUCCESS(Status))
 			{
@@ -478,7 +451,7 @@ NTSTATUS DispatchHandle()
 				return Status;
 			}
 			DWORD64 i;
-			int type;
+			DWORD64 type;
 			if (WriteRequest->extra[0] == 3) // if type is item only
 			{
 				i = 60;
@@ -504,42 +477,49 @@ NTSTATUS DispatchHandle()
 
 			
 
-			NTSTATUS Status;
+			NTSTATUS Status = 7676;
 
 
 
 			bool	glowEnable = true;
 			DWORD	glowContext = 1;
-			DWORD64 Dest;		//destination of memcpy for debugging
 
 
+			
 			while (i < type)										//Loop through entity list ( I love this code section, it is so neat and easy to read)
 			{
-				Status = MmCopyVirtualMemory(process, reinterpret_cast<void*>(BaseAddress + OFFSET_ENTITYLIST + (i << 5)), IoGetCurrentProcess(), reinterpret_cast<void*>(&entAddress), sizeof(void*), UserMode, &Bytes);
+				Status = MmCopyVirtualMemory(process, (PVOID64)(BaseAddress + OFFSET_ENTITYLIST + (i << 5)), IoGetCurrentProcess(), (PVOID64)(&entAddress), sizeof(DWORD64), KernelMode, &Bytes);
 				//set ntstatus and address, for debugging 0-3 is ntstatus, 4-7 means address
 				// + OFFSET_ENTITYLIST + (i << 5);
 				WriteRequest->extra[8] = entAddress;
 				WriteRequest->extra[9] = Status;
 				WriteRequest->extra[10] = BaseAddress + OFFSET_ENTITYLIST + (i << 5);
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &glowEnable, process, (DWORD*)(entAddress + OFFSET_GLOW_ENABLE), sizeof(bool), KernelMode, &Bytes);
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &glowContext, process, (DWORD*)(entAddress + OFFSET_GLOW_CONTEXT), sizeof(int), KernelMode, &Bytes);
-
+				
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&glowEnable, process, (PVOID64)(entAddress + OFFSET_GLOW_ENABLE), sizeof(bool), KernelMode, &Bytes);
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&glowContext, process, (PVOID64)(entAddress + OFFSET_GLOW_CONTEXT), sizeof(int), KernelMode, &Bytes);
 				WriteRequest->extra[11] = entAddress + OFFSET_GLOW_CONTEXT;
 
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &WriteRequest->myFloat[0], process, (DWORD*)(entAddress + OFFSET_GLOW_COLORS), sizeof(DWORD[3]), KernelMode, &Bytes);
+				Status = MmCopyVirtualMemory(process, (PVOID64)(entAddress + OFFSET_HEALTH), IoGetCurrentProcess(), (PVOID64)(&WriteRequest->extra[12]), sizeof(int), KernelMode, &Bytes);
+				//read health for debugging
 
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &WriteRequest->myFloat[3], process, (DWORD*)(entAddress + OFFSET_GLOW_RANGE), sizeof(DWORD), KernelMode, &Bytes);
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&WriteRequest->myFloat[0], process, (PVOID64)(entAddress + OFFSET_GLOW_COLORS), sizeof(float[3]), KernelMode, &Bytes);
+
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&WriteRequest->myFloat[3], process, (PVOID64)(entAddress + OFFSET_GLOW_RANGE), sizeof(float), KernelMode, &Bytes);
+
+				for(int lll = 0; lll < 32; ++lll)
+				{
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&WriteRequest->myFloat[4], process, (PVOID64)(entAddress + OFFSET_GLOW_DURATION - lll), sizeof(float), KernelMode, &Bytes);
+				} 
 			}
-
-
-
-				
 		}
 	}
 	return Status;
 }
 
-
+void apexScanSigs()
+{
+	return;
+}
 
 
 /*VOID glowThread(IN PVOID StartContext)
@@ -562,7 +542,6 @@ NTSTATUS DispatchHandle()
 
 
 
-
 NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
@@ -572,6 +551,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 	Timeout.QuadPart = -20000000;
 
 	DriverObject->DriverUnload = driverUnload;
+	driverObject = DriverObject;
 
 	DbgPrint("driver load!!!!\n");
 
@@ -596,6 +576,10 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 	{
 		DbgPrint("success with piddbcachetable mmunloadeddrivers\n");
 	}
+
+
+	apexScanSigs();
+
 
 
 /*
@@ -627,6 +611,15 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 	Status = ObReferenceObjectByHandle(glo_thread, THREAD_ALL_ACCESS, NULL,
 		KernelMode, &Threadreference, NULL);*/
 
+
+
+
+
+
+
+
+
+
 	if (!NT_SUCCESS(Status))
 	{
 		DbgPrint("getting pointer for thread failed!!\n");
@@ -637,6 +630,8 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 	}
 
 	DispatchHandle();
+
+
 	DbgPrint("driver load has success!!\n");
 	return Status;
 

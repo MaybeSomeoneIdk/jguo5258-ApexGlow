@@ -41,14 +41,6 @@ DWORD getProcId(const wchar_t* procName)
 
 
 
-void sendMessage(char* message)
-{
-	char* pointertoBuffer = (char*)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 4096);
-	RtlCopyMemory(pointertoBuffer, message, sizeof(message));
-	UnmapViewOfFile(pointertoBuffer);
-	return;
-}
-
 
 
 
@@ -90,7 +82,12 @@ int main()
 		Sleep(2000);
 		cout << "apex legends and/or shared memory not found!!@!!!!!\n";
 	}
-	ProcessID = getProcId(L"r5apex.exe");;//set pid
+	ProcessID = getProcId(L"r5apex.exe");//set pid
+
+	Sleep(2000);
+
+	sendPID();
+
 	Sleep(2000);
 
 	int input;

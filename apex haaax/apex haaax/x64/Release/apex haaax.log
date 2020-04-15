@@ -1,7 +1,25 @@
 ﻿  Building 'apex haaax' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
   Stamping x64\Release\apexhaaax.inf
-  Stamping [Version] section with DriverVer=04/11/2020,20.25.29.801
-  apex haaax.vcxproj -> C:\Users\jguo5\source\repos\apex haaax\x64\Release\apexhaaax.sys
+  Stamping [Version] section with DriverVer=04/15/2020,8.32.45.411
+  Driver.cpp
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\undocumented.h(13,1): warning C4141: 'dllimport': used more than once
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\undocumented.h(68,1): warning C4141: 'dllimport': used more than once
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\undocumented.h(83,1): warning C4141: 'dllimport': used more than once
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\undocumented.h(341,1): warning C4141: 'dllimport': used more than once
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\MmUnloadedDriversh.h(82,10): warning C4244: 'return': conversion from 'NTSTATUS' to 'BOOLEAN', possible loss of data
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\MmUnloadedDriversh.h(163,10): warning C4189: 'cleared': local variable is initialized but not referenced
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\MmUnloadedDriversh.h(164,10): warning C4189: 'Filled': local variable is initialized but not referenced
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\Driver.cpp(10,1): warning C4005: 'STANDARD_RIGHTS_ALL': macro redefinition
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(5208): message : see previous definition of 'STANDARD_RIGHTS_ALL'
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\Driver.cpp(49,37): warning C4100: 'pDriverObject': unreferenced formal parameter
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\Driver.cpp(114,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\Driver.cpp(480,22): warning C4456: declaration of 'Status' hides previous local declaration
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\Driver.cpp(395,11): message : see declaration of 'Status'
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\Driver.cpp(567): warning C4706: assignment within conditional expression
+  apex haaax.vcxproj -> C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\x64\Release\apexhaaax.sys
+  Done Adding Additional Store
+  Successfully signed: C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\x64\Release\apexhaaax.sys
+  
   Driver is a Universal Driver.
   .........................
   Signability test complete.
@@ -13,7 +31,7 @@
   None
   
   Catalog generation complete.
-  C:\Users\jguo5\source\repos\apex haaax\x64\Release\apex haaax\apexhaaax.cat
+  C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\x64\Release\apex haaax\apexhaaax.cat
   Done Adding Additional Store
-  Successfully signed: C:\Users\jguo5\source\repos\apex haaax\x64\Release\apex haaax\apexhaaax.cat
+  Successfully signed: C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\x64\Release\apex haaax\apexhaaax.cat
   
