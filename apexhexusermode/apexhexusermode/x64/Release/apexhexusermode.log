@@ -1,6 +1,9 @@
-﻿  Generating code
+﻿  apexhexusermode.cpp
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apexhexusermode\apexhexusermode\Commands.h(56,24): warning C4305: '=': truncation from 'double' to 'float'
+C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apexhexusermode\apexhexusermode\Commands.h(58,24): warning C4305: '=': truncation from 'double' to 'float'
+  Generating code
   2 of 18 functions (11.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+    2 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   apexhexusermode.vcxproj -> C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apexhexusermode\x64\Release\apexhexusermode.exe

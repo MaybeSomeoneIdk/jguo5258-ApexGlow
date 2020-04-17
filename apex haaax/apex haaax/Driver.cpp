@@ -28,13 +28,14 @@ DWORD ReadSignature[2] = { 0x2a92, 0x139b };
 DWORD localPlayer = 0x10F4F4;
 DWORD healthOffset = 0xF8;
 DWORD64 entAddress;
-DWORD64 OFFSET_ENTITYLIST		=   0x1897f38;
-DWORD64 OFFSET_GLOW_ENABLE		=   0x380;
-DWORD64 OFFSET_GLOW_CONTEXT		=	0x310;
-DWORD64 OFFSET_GLOW_RANGE		=	0x2FC;
-DWORD64 OFFSET_GLOW_COLORS		=   0x1B8;
-DWORD64 OFFSET_GLOW_DURATION	=   0x2E8;
-DWORD64 OFFSET_HEALTH			=	0x3E0;
+DWORD64 OFFSET_ENTITYLIST = 0x1897F38;
+DWORD64 OFFSET_GLOW_ENABLE = 0x380;
+DWORD64 OFFSET_GLOW_CONTEXT = 0x310;
+DWORD64 OFFSET_GLOW_RANGE = 0x2FC;
+DWORD64 OFFSET_GLOW_COLORS = 0x1D0;
+DWORD64 OFFSET_GLOW_DURATION = 0x2D0;
+DWORD64 OFFSET_HEALTH = 0x3E0;
+
 struct RWProcessMemory
 {
 	DWORD Signature[2];
@@ -44,8 +45,8 @@ struct RWProcessMemory
 	float myFloat[10];
 	DWORD64 extra[16];
 	bool mybools[4];
+	int extraInts[4];
 };
-
 VOID driverUnload(IN PDRIVER_OBJECT pDriverObject) {
 
 	DbgPrint("Driver Unloading routine called! \n");
@@ -66,7 +67,6 @@ PVOID getKernelBase(OUT PULONG pSize)
 	ULONG Bytes = 0;
 	PRTL_PROCESS_MODULES arrayOfModules;
 	PVOID routinePtr = NULL; /*RoutinePtr points to a
-
 	routine and checks if it is in Ntoskrnl*/
 
 	UNICODE_STRING routineName;
@@ -240,7 +240,7 @@ NTSTATUS CreateSharedMemory()
 		return STATUS_INSUFFICIENT_RESOURCES;
 	}
 	else
-	DbgPrint("ExAllocatePoolWithTag  succeed  : %i\n", Status);
+		DbgPrint("ExAllocatePoolWithTag  succeed  : %i\n", Status);
 
 
 
@@ -253,7 +253,7 @@ NTSTATUS CreateSharedMemory()
 		return Status;
 	}
 	else
-	DbgPrint("RtlCreateAcl  succeed  : %i\n", Status);
+		DbgPrint("RtlCreateAcl  succeed  : %i\n", Status);
 
 
 
@@ -270,7 +270,7 @@ NTSTATUS CreateSharedMemory()
 		return Status;
 	}
 	else
-	DbgPrint("RtlAddAccessAllowedAce SeAliasAdminsSid succeed!!!! : %i\n", Status);
+		DbgPrint("RtlAddAccessAllowedAce SeAliasAdminsSid succeed!!!! : %i\n", Status);
 
 
 
@@ -353,8 +353,6 @@ NTSTATUS CreateSharedMemory()
 
 
 
-
-
 VOID ReadSharedMemory()
 {
 	if (sectionHandle)
@@ -384,7 +382,6 @@ VOID ReadSharedMemory()
 
 
 
-
 PDRIVER_OBJECT driverObject;
 DWORD64 BaseAddress;
 DWORD ProcessID;
@@ -396,7 +393,7 @@ NTSTATUS DispatchHandle()
 	DbgPrint("waiting for command...\n");
 	while (1)
 	{
-		
+
 		LARGE_INTEGER Timeout;
 		Timeout.QuadPart = -10000000;
 		KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
@@ -409,7 +406,7 @@ NTSTATUS DispatchHandle()
 				ObDereferenceObject(process);
 			}
 			driverUnload(driverObject);
-		
+
 
 			DbgPrint("stopping driver loop\n");
 
@@ -428,17 +425,17 @@ NTSTATUS DispatchHandle()
 
 
 			Status = PsLookupProcessByProcessId((HANDLE)ProcessID, &process);
-			
+
 			BaseAddress = (DWORD64)PsGetProcessSectionBaseAddress(process);
 
 
 			//pslookupprocessbyprocessid works
 
-		
+
 			WriteRequest->extra[5] = Status;
 			WriteRequest->extra[6] = BaseAddress;					/*	debug messsages		*/
 			WriteRequest->extra[7] = ProcessID;
-			
+
 			if (NT_SUCCESS(Status))
 			{
 				DbgPrint("PsLookupProcessByProcessId succedd\n");
@@ -451,31 +448,31 @@ NTSTATUS DispatchHandle()
 				return Status;
 			}
 			DWORD64 i;
-			DWORD64 type;
+			DWORD64 upperBounds;
 			if (WriteRequest->extra[0] == 3) // if type is item only
 			{
 				i = 60;
-				type = 10000;
+				upperBounds = 10000;
 			}
 			else if (WriteRequest->extra[0] == 60) //if the type is player only
 			{
 				i = 0;
-				type = 60;
+				upperBounds = 60;
 
 			}
 			else if (WriteRequest->extra[0] == 10000) // if type is player and item
 			{
 				i = 0;
-				type = 10000;
+				upperBounds = 10000;
 			}
 			else
 			{
 				i = 0;
-				type = 10000;
+				upperBounds = 10000;
 			}
 			SIZE_T Bytes;
 
-			
+
 
 			NTSTATUS Status = 7676;
 
@@ -485,31 +482,38 @@ NTSTATUS DispatchHandle()
 			DWORD	glowContext = 1;
 
 
-			
-			while (i < type)										//Loop through entity list ( I love this code section, it is so neat and easy to read)
+
+			while (i < upperBounds)										//Loop through entity list ( I love this code section, it is so neat and easy to read)
 			{
-				Status = MmCopyVirtualMemory(process, (PVOID64)(BaseAddress + OFFSET_ENTITYLIST + (i << 5)), IoGetCurrentProcess(), (PVOID64)(&entAddress), sizeof(DWORD64), KernelMode, &Bytes);
+				Status = MmCopyVirtualMemory(process, (PVOID64)(BaseAddress + OFFSET_ENTITYLIST + (i << 5)), PsGetCurrentProcess(), &entAddress, sizeof(DWORD64), KernelMode, &Bytes);
 				//set ntstatus and address, for debugging 0-3 is ntstatus, 4-7 means address
 				// + OFFSET_ENTITYLIST + (i << 5);
 				WriteRequest->extra[8] = entAddress;
-				WriteRequest->extra[9] = Status;
 				WriteRequest->extra[10] = BaseAddress + OFFSET_ENTITYLIST + (i << 5);
-				
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&glowEnable, process, (PVOID64)(entAddress + OFFSET_GLOW_ENABLE), sizeof(bool), KernelMode, &Bytes);
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&glowContext, process, (PVOID64)(entAddress + OFFSET_GLOW_CONTEXT), sizeof(int), KernelMode, &Bytes);
-				WriteRequest->extra[11] = entAddress + OFFSET_GLOW_CONTEXT;
 
-				Status = MmCopyVirtualMemory(process, (PVOID64)(entAddress + OFFSET_HEALTH), IoGetCurrentProcess(), (PVOID64)(&WriteRequest->extra[12]), sizeof(int), KernelMode, &Bytes);
-				//read health for debugging
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)(&glowEnable), process, reinterpret_cast<void*>(entAddress + OFFSET_GLOW_ENABLE), sizeof(bool), KernelMode, &Bytes);
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), reinterpret_cast<void*>(&glowContext), process, reinterpret_cast<void*>(entAddress + OFFSET_GLOW_CONTEXT), sizeof(int), KernelMode, &Bytes);
 
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&WriteRequest->myFloat[0], process, (PVOID64)(entAddress + OFFSET_GLOW_COLORS), sizeof(float[3]), KernelMode, &Bytes);
 
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&WriteRequest->myFloat[3], process, (PVOID64)(entAddress + OFFSET_GLOW_RANGE), sizeof(float), KernelMode, &Bytes);
-
-				for(int lll = 0; lll < 32; ++lll)
+				if (i == 4)
 				{
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&WriteRequest->myFloat[4], process, (PVOID64)(entAddress + OFFSET_GLOW_DURATION - lll), sizeof(float), KernelMode, &Bytes);
-				} 
+					Status = MmCopyVirtualMemory(process, (void*)(entAddress + OFFSET_HEALTH), PsGetCurrentProcess(), (void*)&(WriteRequest->extraInts[0]), sizeof(int), UserMode, &Bytes);
+					WriteRequest->extra[9] = Status;
+				}
+				if (i == 12)
+				{
+					Status = MmCopyVirtualMemory(process, (void*)(entAddress + OFFSET_HEALTH), PsGetCurrentProcess(), (void*)&(WriteRequest->extraInts[1]), sizeof(int), KernelMode, &Bytes);
+					WriteRequest->extra[9] = Status;
+				}
+				WriteRequest->extra[11] = entAddress + OFFSET_GLOW_CONTEXT;
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &(WriteRequest->myFloat[0]), process, (PVOID64)(entAddress + OFFSET_GLOW_COLORS), sizeof(float[3]), KernelMode, &Bytes);
+
+				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &(WriteRequest->myFloat[3]), process, (PVOID64)(entAddress + OFFSET_GLOW_RANGE), sizeof(float), KernelMode, &Bytes);
+
+				for (int lll = 0; lll < 52; lll += 4) //beginning of glow is what i find in glow xref - 0x18, or -24
+				{
+					Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&(WriteRequest->myFloat[4]), process, (PVOID64)(entAddress + OFFSET_GLOW_DURATION + lll), sizeof(float), KernelMode, &Bytes);
+				}
 			}
 		}
 	}
@@ -529,14 +533,11 @@ void apexScanSigs()
 	LARGE_INTEGER ViewOffset = { 0 };
 	ViewOffset.HighPart = 0;
 	ViewOffset.LowPart = 1024 * 4;
-
-
 	ZwMapViewOfSection(sectionHandle, NtCurrentProcess(), &SharedSection, 0, ViewSize, &ViewOffset, &ViewSize, ViewUnmap, 0, PAGE_READWRITE | PAGE_NOCACHE);
-	
+
 	float r;
 	float g;
 	float b;
-
 } */
 
 
@@ -559,7 +560,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 
 	BOOLEAN status1 = ClearPiddbCacheTable();
 
-	
+
 	KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
 
 	BOOLEAN status2 = cleanUnloadedDriverString();
@@ -582,34 +583,29 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 
 
 
-/*
-	PVOID Threadreference;
-	HANDLE glo_thread = 0;
-	OBJECT_ATTRIBUTES ThreadObject;
-	ThreadObject.Length = 24;
-	ThreadObject.RootDirectory = 0;
-	ThreadObject.ObjectName = 0;
-	ThreadObject.Attributes = 512;
-	ThreadObject.SecurityDescriptor = 0;
-	ThreadObject.SecurityQualityOfService = 0;
+	/*
+		PVOID Threadreference;
+		HANDLE glo_thread = 0;
+		OBJECT_ATTRIBUTES ThreadObject;
+		ThreadObject.Length = 24;
+		ThreadObject.RootDirectory = 0;
+		ThreadObject.ObjectName = 0;
+		ThreadObject.Attributes = 512;
+		ThreadObject.SecurityDescriptor = 0;
+		ThreadObject.SecurityQualityOfService = 0;
+		InitializeObjectAttributes(&ThreadObject, NULL, OBJ_KERNEL_HANDLE, NULL, NULL);
+		Status = PsCreateSystemThread(&glo_thread, (ACCESS_MASK)STANDARD_RIGHTS_ALL, &ThreadObject, 0, 0, (PKSTART_ROUTINE)glowThread, 0);
 
-
-	InitializeObjectAttributes(&ThreadObject, NULL, OBJ_KERNEL_HANDLE, NULL, NULL);
-
-	Status = PsCreateSystemThread(&glo_thread, (ACCESS_MASK)STANDARD_RIGHTS_ALL, &ThreadObject, 0, 0, (PKSTART_ROUTINE)glowThread, 0);
-	
-
-	if (!NT_SUCCESS(Status))
-	{
-		DbgPrint("pscreatesystemthread failed!!!\n");
-	}
-	else
-	{
-		DbgPrint("Pscreatesystemthread succeed!!!\n");
-	}
-
-	Status = ObReferenceObjectByHandle(glo_thread, THREAD_ALL_ACCESS, NULL,
-		KernelMode, &Threadreference, NULL);*/
+		if (!NT_SUCCESS(Status))
+		{
+			DbgPrint("pscreatesystemthread failed!!!\n");
+		}
+		else
+		{
+			DbgPrint("Pscreatesystemthread succeed!!!\n");
+		}
+		Status = ObReferenceObjectByHandle(glo_thread, THREAD_ALL_ACCESS, NULL,
+			KernelMode, &Threadreference, NULL);*/
 
 
 

@@ -24,6 +24,8 @@ struct RWProcessMemory
 	DWORD64 SourceAddress;
 	float myFloat[10];
 	DWORD64 extra[16];
+	bool mybools[4];
+	int extraInts[4];
 };
 
 void sendPID()
@@ -69,7 +71,8 @@ void glowEnable(int type) //60 for player only, 10000 for player and item, 3 for
 	cout << "mmcopyvirtualmemory status is: " << std::dec << pointerToBuffer->extra[9] << endl;
 	cout << "entity pointer location is: " << std::hex << pointerToBuffer->extra[10] << endl;
 	cout << "glow context + entity pointer is: " << std::hex << pointerToBuffer->extra[11] << endl;
-	cout << "random entity health is: " << std::dec << pointerToBuffer->extra[12] << endl;
+	cout << "random entity 1 health is: " << std::dec << pointerToBuffer->extraInts[0] << endl;
+	cout << "random entity 2 health is: " << std::dec << pointerToBuffer->extraInts[1] << endl;
 	UnmapViewOfFile(pointerToBuffer);
 	return;
 }
