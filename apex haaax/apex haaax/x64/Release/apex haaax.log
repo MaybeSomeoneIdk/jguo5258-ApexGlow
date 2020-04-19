@@ -1,6 +1,6 @@
 ﻿  Building 'apex haaax' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
   Stamping x64\Release\apexhaaax.inf
-  Stamping [Version] section with DriverVer=04/16/2020,20.21.1.752
+  Stamping [Version] section with DriverVer=04/19/2020,17.17.7.173
   apex haaax.vcxproj -> C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\x64\Release\apexhaaax.sys
   Driver is a Universal Driver.
   .........................

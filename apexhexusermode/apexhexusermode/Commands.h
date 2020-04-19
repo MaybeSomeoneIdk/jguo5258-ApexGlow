@@ -26,6 +26,7 @@ struct RWProcessMemory
 	DWORD64 extra[16];
 	bool mybools[4];
 	int extraInts[4];
+	UCHAR MyChars[6];
 };
 
 void sendPID()
@@ -53,26 +54,17 @@ void glowEnable(int type) //60 for player only, 10000 for player and item, 3 for
 	proto.extra[0] = type; //set it to type of esp
 	proto.Signature[0] = 0x2a92;//set signature
 	proto.Signature[1] = 0x1393;
-	proto.myFloat[0] = 1.8;
-	proto.myFloat[1] = 1;	 //set colors
-	proto.myFloat[2] = 1.9;
-	proto.myFloat[3] = glowDistance; //set distance
-	proto.myFloat[4] = FLT_MAX; //set duration
 
 
 	RtlCopyMemory(pointerToBuffer, &proto, sizeof(proto));
 
-	Sleep(5000);
+	Sleep(4000);
 
 	cout << "status peprocess is: " << std::dec << pointerToBuffer->extra[5] << endl;
 	cout << "base address is: " << std::hex << pointerToBuffer->extra[6] << endl;
 	cout << "Process ID is: " << std::dec << pointerToBuffer->extra[7] << endl;
-	cout << "entity pointer value is: " << std::hex << pointerToBuffer->extra[8] << endl;
-	cout << "mmcopyvirtualmemory status is: " << std::dec << pointerToBuffer->extra[9] << endl;
-	cout << "entity pointer location is: " << std::hex << pointerToBuffer->extra[10] << endl;
-	cout << "glow context + entity pointer is: " << std::hex << pointerToBuffer->extra[11] << endl;
-	cout << "random entity 1 health is: " << std::dec << pointerToBuffer->extraInts[0] << endl;
-	cout << "random entity 2 health is: " << std::dec << pointerToBuffer->extraInts[1] << endl;
+	cout << "Entity pointer offset is: " << pointerToBuffer->extra[8] << endl;
+	cout << "current IRQL level is: " << pointerToBuffer->MyChars[0] << endl;
 	UnmapViewOfFile(pointerToBuffer);
 	return;
 }

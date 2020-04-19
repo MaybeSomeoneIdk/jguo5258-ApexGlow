@@ -84,11 +84,10 @@ int main()
 	}
 	ProcessID = getProcId(L"r5apex.exe");//set pid
 
-	Sleep(2000);
 
 	sendPID();
 
-	Sleep(2000);
+	Sleep(10000);
 
 	int input;
 	while (1)

@@ -35,5 +35,8 @@
     <ClInclude Include="MmUnloadedDriversh.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="ReadWrite.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

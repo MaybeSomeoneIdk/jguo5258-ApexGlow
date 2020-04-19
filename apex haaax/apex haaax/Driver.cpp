@@ -1,13 +1,11 @@
 #include "MmUnloadedDriversh.h"
+#include "ReadWrite.h"
 #pragma warning(disable:4700)
 
-#define IMAGE_SCN_CNT_CODE 0x00000020
-#define IMAGE_SCN_MEM_EXECUTE 0x20000000
-#define IMAGE_SCN_MEM_DISCARDABLE 0x02000000
-#define IMAGE_NT_SIGNATURE 0x00004550
-#define IMAGE_DOS_SIGNATURE 0x5A4D // MZ
 
-#define STANDARD_RIGHTS_ALL 0x001F0000L
+
+#define FLT_MAX         3.402823466e+38F       /* max value */
+
 
 
 //Allocate buffer for name of shared memory
@@ -25,16 +23,19 @@ DWORD WriteSignature[2] = { 0x2a92, 0x139a };
 DWORD ReadSignature[2] = { 0x2a92, 0x139b };
 
 
-DWORD localPlayer = 0x10F4F4;
-DWORD healthOffset = 0xF8;
-DWORD64 entAddress;
-DWORD64 OFFSET_ENTITYLIST = 0x1897F38;
-DWORD64 OFFSET_GLOW_ENABLE = 0x380;
-DWORD64 OFFSET_GLOW_CONTEXT = 0x310;
-DWORD64 OFFSET_GLOW_RANGE = 0x2FC;
-DWORD64 OFFSET_GLOW_COLORS = 0x1D0;
-DWORD64 OFFSET_GLOW_DURATION = 0x2D0;
-DWORD64 OFFSET_HEALTH = 0x3E0;
+
+
+DWORD64		OFFSET_ENTITYLIST	 =	0x1897F38;
+DWORD64		OFFSET_GLOW_ENABLE	 =	0x390;
+DWORD64		OFFSET_GLOW_CONTEXT  =	0x310;
+DWORD64 	OFFSET_GLOW_RANGE	 =	0x2FC;
+DWORD64		OFFSET_GLOW_COLORS	 =	0x1D0;
+DWORD64		OFFSET_GLOW_DURATION =  0x2D0;
+DWORD64		OFFSET_GLOW_MAGIC	 =	0x278;
+DWORD64		OFFSET_HEALTH 		 =	0x3E0;
+
+
+
 
 struct RWProcessMemory
 {
@@ -46,7 +47,11 @@ struct RWProcessMemory
 	DWORD64 extra[16];
 	bool mybools[4];
 	int extraInts[4];
+	UCHAR MyChars[6];
 };
+
+
+
 VOID driverUnload(IN PDRIVER_OBJECT pDriverObject) {
 
 	DbgPrint("Driver Unloading routine called! \n");
@@ -58,155 +63,6 @@ VOID driverUnload(IN PDRIVER_OBJECT pDriverObject) {
 		ZwClose(sectionHandle);
 
 }
-
-ULONG KernelSize;
-
-PVOID getKernelBase(OUT PULONG pSize)
-{
-	NTSTATUS Status = STATUS_SUCCESS;
-	ULONG Bytes = 0;
-	PRTL_PROCESS_MODULES arrayOfModules;
-	PVOID routinePtr = NULL; /*RoutinePtr points to a
-	routine and checks if it is in Ntoskrnl*/
-
-	UNICODE_STRING routineName;
-
-	if (KernelBase != NULL)
-	{
-		if (pSize)
-			*pSize = KernelSize;
-		return KernelBase;
-	}
-
-	RtlUnicodeStringInit(&routineName, L"NtOpenFile");
-	routinePtr = MmGetSystemRoutineAddress(&routineName); //get address of NtOpenFile
-
-
-	if (routinePtr == NULL)
-	{
-		return NULL;
-	}
-	else
-	{
-
-		DbgPrint("MmGetSystemRoutineAddress inside getkernelbase succeed\n");
-	}
-
-
-	//get size of system module information
-	Status = ZwQuerySystemInformation(SystemModuleInformation, 0, Bytes, &Bytes);
-	if (Bytes == 0)
-	{
-		DbgPrint("%s: Invalid SystemModuleInformation size\n");
-		return NULL;
-	}
-
-
-	arrayOfModules = (PRTL_PROCESS_MODULES)ExAllocatePoolWithTag(NonPagedPool, Bytes, 0x454E4F45); //array of loaded kernel modules
-	RtlZeroMemory(arrayOfModules, Bytes); //clean memory
-
-
-	Status = ZwQuerySystemInformation(SystemModuleInformation, arrayOfModules, Bytes, &Bytes);
-	if (NT_SUCCESS(Status))
-	{
-		DbgPrint("ZwQuerySystemInformation inside getkernelbase succeed\n");
-		PRTL_PROCESS_MODULE_INFORMATION pMod = arrayOfModules->Modules;
-		for (int i = 0; i < arrayOfModules->NumberOfModules; ++i)
-		{
-
-			if (routinePtr >= pMod[i].ImageBase && routinePtr < (PVOID)((PUCHAR)pMod[i].ImageBase + pMod[i].ImageSize))
-			{
-
-				KernelBase = pMod[i].ImageBase;
-				KernelSize = pMod[i].ImageSize;
-
-				if (pSize)
-					*pSize = KernelSize;
-				break;
-			}
-		}
-	}
-	if (arrayOfModules)
-		ExFreePoolWithTag(arrayOfModules, 0x454E4F45); // 'ENON'
-
-	DbgPrint("KernelSize : %i\n", KernelSize);
-	DbgPrint("g_KernelBase : %p\n", KernelBase);
-	return (PVOID)KernelBase;
-}
-
-
-NTSTATUS BBSearchPattern(IN PCUCHAR pattern, IN UCHAR wildcard, IN ULONG_PTR len, IN const VOID* base, IN ULONG_PTR size, OUT PVOID* ppFound)
-{
-	ASSERT(ppFound != NULL && pattern != NULL && base != NULL);
-	if (ppFound == NULL || pattern == NULL || base == NULL)
-		return STATUS_INVALID_PARAMETER;
-
-	for (ULONG_PTR i = 0; i < size - len; i++)
-	{
-		BOOLEAN found = TRUE;
-		for (ULONG_PTR j = 0; j < len; j++)
-		{
-			if (pattern[j] != wildcard && pattern[j] != ((PCUCHAR)base)[i + j])
-			{
-				found = FALSE;
-				break;
-			}
-		}
-
-		if (found != FALSE)
-		{
-			*ppFound = (PUCHAR)base + i;
-			return STATUS_SUCCESS;
-		}
-	}
-
-	return STATUS_NOT_FOUND;
-}
-
-
-
-NTSTATUS BBScanSection(IN PCCHAR section, IN PCUCHAR pattern, IN UCHAR wildcard, IN ULONG_PTR len, OUT PVOID* ppFound, PVOID base)
-{
-	//ASSERT(ppFound != NULL);
-	if (ppFound == NULL)
-		return STATUS_ACCESS_DENIED; //STATUS_INVALID_PARAMETER
-
-	if (nullptr == base)
-		base = getKernelBase(NULL);
-	if (base == nullptr)
-		return STATUS_ACCESS_DENIED; //STATUS_NOT_FOUND;
-
-	PIMAGE_NT_HEADERS64 pHdr = (PIMAGE_NT_HEADERS64)RtlImageNtHeader(base);
-	if (!pHdr)
-		return STATUS_ACCESS_DENIED; // STATUS_INVALID_IMAGE_FORMAT;
-
-	//PIMAGE_SECTION_HEADER pFirstSection = (PIMAGE_SECTION_HEADER)(pHdr + 1);
-	PIMAGE_SECTION_HEADER pFirstSection = (PIMAGE_SECTION_HEADER)((uintptr_t)&pHdr->FileHeader + pHdr->FileHeader.SizeOfOptionalHeader + sizeof(IMAGE_FILE_HEADER));
-
-	for (PIMAGE_SECTION_HEADER pSection = pFirstSection; pSection < pFirstSection + pHdr->FileHeader.NumberOfSections; pSection++)
-	{
-		//DbgPrint("section: %s\r\n", pSection->Name);
-		ANSI_STRING s1, s2;
-		RtlInitAnsiString(&s1, section);
-		RtlInitAnsiString(&s2, (PCCHAR)pSection->Name);
-		if (RtlCompareString(&s1, &s2, TRUE) == 0)
-		{
-			PVOID ptr = NULL;
-			NTSTATUS status = BBSearchPattern(pattern, wildcard, len, (PUCHAR)base + pSection->VirtualAddress, pSection->Misc.VirtualSize, &ptr);
-			if (NT_SUCCESS(status)) {
-				*(PULONG64)ppFound = (ULONG_PTR)(ptr); //- (PUCHAR)base
-				//DbgPrint("found\r\n");
-				return status;
-			}
-			//we continue scanning because there can be multiple sections with the same name.
-		}
-	}
-
-	return STATUS_ACCESS_DENIED; //STATUS_NOT_FOUND;
-}
-
-
-const char* PiddbCacheTableSig = "";
 
 
 
@@ -382,22 +238,30 @@ VOID ReadSharedMemory()
 
 
 
+
+
+
 PDRIVER_OBJECT driverObject;
 DWORD64 BaseAddress;
 DWORD ProcessID;
-PEPROCESS process;
+DWORD64 entAddress;
+//the PEPROCESS used is outside
+
 NTSTATUS DispatchHandle()
 {
 
 	NTSTATUS Status = STATUS_SUCCESS;
+	LARGE_INTEGER Timeout;
+	Timeout.QuadPart = -10000000;
 	DbgPrint("waiting for command...\n");
 	while (1)
 	{
 
-		LARGE_INTEGER Timeout;
-		Timeout.QuadPart = -10000000;
+
 		KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
 		ReadSharedMemory();
+
+
 
 		if (strcmp((PCHAR)SharedSection, "Stop") == 0) //if string is equal
 		{
@@ -412,11 +276,44 @@ NTSTATUS DispatchHandle()
 
 			return Status;
 		}
+
+
+
 		if ((reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[0] == 0x2a92) && reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[1] == 0x1392) // check signature, 13 92 means ProcessID send
 		{
 			RWProcessMemory* WriteRequest = (RWProcessMemory*)SharedSection;
 			ProcessID = WriteRequest->processPID;
+
+
+			//Entitylist Sig		7F 24 B8 FE 3F 00 00 48 8D 15 ? ? ? ? 2B C1
+			//Localplayer Sig		48 8D 0D ? ? ? ? 48 8B D7 FF 50 58
+
+			UCHAR EntityList_Sig[] = "\x7F\x24\xB8\xFE\x3F\x00\x00\x48\x8D\x15\xCC\xCC\xCC\xCC\x2B\xC1";
+
+
+			/*-------------------Get PEPROCESS--------------------------*/
+			Status = PsLookupProcessByProcessId((HANDLE)ProcessID, &process);
+			BOOLEAN isWow64 = (PsGetProcessWow64Process(process) != NULL) ? TRUE : FALSE;
+
+
+
+			/*-------------------Get Base Address--------------------------*/
+			UNICODE_STRING programImage;
+			RtlInitUnicodeString(&programImage, L"r5apex.exe");
+
+
+			/*--------------- IMPORTANT INFO: ppFound in Bbscansection is location of the beginning of the Sig !!! Add some bytes to get to pointer, add some bytes to get to offset*/
+			KAPC_STATE apc;
+			KeStackAttachProcess(process, &apc);
+			BaseAddress = (ULONG64)GetUserModule(process, &programImage, isWow64);
+			BBScanSection("safdah", EntityList_Sig, 0xCC, sizeof(EntityList_Sig) - 1, (PVOID*)&OFFSET_ENTITYLIST, (PVOID)BaseAddress);
+			KeUnstackDetachProcess(&apc);
+			OFFSET_ENTITYLIST += 10;
+			OFFSET_ENTITYLIST -= BaseAddress;
+			WriteRequest->extra[8] = OFFSET_ENTITYLIST;
 		}
+
+
 
 		if ((reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[0] == 0x2a92) && reinterpret_cast<RWProcessMemory*>(SharedSection)->Signature[1] == 0x1393) // check signature, 13 93 means glow
 		{
@@ -424,9 +321,25 @@ NTSTATUS DispatchHandle()
 			RWProcessMemory* WriteRequest = (RWProcessMemory*)SharedSection;
 
 
-			Status = PsLookupProcessByProcessId((HANDLE)ProcessID, &process);
+			/*-------------------Floating point thing--------------------------*/
+			KFLOATING_SAVE     save;
+			KeSaveFloatingPointState(&save);
 
-			BaseAddress = (DWORD64)PsGetProcessSectionBaseAddress(process);
+
+			/*-------------------Get PEPROCESS--------------------------*/
+			Status = PsLookupProcessByProcessId((HANDLE)ProcessID, &process);
+			BOOLEAN isWow64 = (PsGetProcessWow64Process(process) != NULL) ? TRUE : FALSE;
+
+
+
+			/*-------------------Get Base Address--------------------------*/
+			UNICODE_STRING programImage;
+			RtlInitUnicodeString(&programImage, L"r5apex.exe");
+
+			KAPC_STATE apc;
+			KeStackAttachProcess(process, &apc);
+			BaseAddress = (ULONG64)GetUserModule(process, &programImage, isWow64);
+			KeUnstackDetachProcess(&apc);
 
 
 			//pslookupprocessbyprocessid works
@@ -435,7 +348,7 @@ NTSTATUS DispatchHandle()
 			WriteRequest->extra[5] = Status;
 			WriteRequest->extra[6] = BaseAddress;					/*	debug messsages		*/
 			WriteRequest->extra[7] = ProcessID;
-
+			WriteRequest->extra[8] = OFFSET_ENTITYLIST;
 			if (NT_SUCCESS(Status))
 			{
 				DbgPrint("PsLookupProcessByProcessId succedd\n");
@@ -447,8 +360,10 @@ NTSTATUS DispatchHandle()
 				ObDereferenceObject(process);
 				return Status;
 			}
-			DWORD64 i;
-			DWORD64 upperBounds;
+
+
+			int i;
+			int upperBounds;
 			if (WriteRequest->extra[0] == 3) // if type is item only
 			{
 				i = 60;
@@ -474,56 +389,66 @@ NTSTATUS DispatchHandle()
 
 
 
-			NTSTATUS Status = 7676;
 
+			KIRQL irql = KeGetCurrentIrql();
+			WriteRequest->MyChars[0] = irql;
 
-
-			bool	glowEnable = true;
-			DWORD	glowContext = 1;
-
-
-
-			while (i < upperBounds)										//Loop through entity list ( I love this code section, it is so neat and easy to read)
+			if (BaseAddress)
 			{
-				Status = MmCopyVirtualMemory(process, (PVOID64)(BaseAddress + OFFSET_ENTITYLIST + (i << 5)), PsGetCurrentProcess(), &entAddress, sizeof(DWORD64), KernelMode, &Bytes);
-				//set ntstatus and address, for debugging 0-3 is ntstatus, 4-7 means address
-				// + OFFSET_ENTITYLIST + (i << 5);
-				WriteRequest->extra[8] = entAddress;
-				WriteRequest->extra[10] = BaseAddress + OFFSET_ENTITYLIST + (i << 5);
-
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)(&glowEnable), process, reinterpret_cast<void*>(entAddress + OFFSET_GLOW_ENABLE), sizeof(bool), KernelMode, &Bytes);
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), reinterpret_cast<void*>(&glowContext), process, reinterpret_cast<void*>(entAddress + OFFSET_GLOW_CONTEXT), sizeof(int), KernelMode, &Bytes);
-
-
-				if (i == 4)
+				while (i < upperBounds)										//Loop through entity list ( I love this code section, it is so neat and easy to read)
 				{
-					Status = MmCopyVirtualMemory(process, (void*)(entAddress + OFFSET_HEALTH), PsGetCurrentProcess(), (void*)&(WriteRequest->extraInts[0]), sizeof(int), UserMode, &Bytes);
-					WriteRequest->extra[9] = Status;
-				}
-				if (i == 12)
-				{
-					Status = MmCopyVirtualMemory(process, (void*)(entAddress + OFFSET_HEALTH), PsGetCurrentProcess(), (void*)&(WriteRequest->extraInts[1]), sizeof(int), KernelMode, &Bytes);
-					WriteRequest->extra[9] = Status;
-				}
-				WriteRequest->extra[11] = entAddress + OFFSET_GLOW_CONTEXT;
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &(WriteRequest->myFloat[0]), process, (PVOID64)(entAddress + OFFSET_GLOW_COLORS), sizeof(float[3]), KernelMode, &Bytes);
 
-				Status = MmCopyVirtualMemory(PsGetCurrentProcess(), &(WriteRequest->myFloat[3]), process, (PVOID64)(entAddress + OFFSET_GLOW_RANGE), sizeof(float), KernelMode, &Bytes);
+					if (strcmp((PCHAR)SharedSection, "Stop") == 0) //if string is equal
+					{
+						if (process)
+						{
+							ObDereferenceObject(process);
+						}
+						driverUnload(driverObject);
 
-				for (int lll = 0; lll < 52; lll += 4) //beginning of glow is what i find in glow xref - 0x18, or -24
-				{
-					Status = MmCopyVirtualMemory(PsGetCurrentProcess(), (PVOID64)&(WriteRequest->myFloat[4]), process, (PVOID64)(entAddress + OFFSET_GLOW_DURATION + lll), sizeof(float), KernelMode, &Bytes);
+
+						DbgPrint("stopping driver loop\n");
+
+						return Status;
+					}
+
+					entAddress = READ<ULONG64>(BaseAddress + OFFSET_ENTITYLIST + (i << 5));
+
+
+					//set Debug flags
+					// OFFSET_ENTITYLIST + (i << 5);
+\
+					if (entAddress > 0)
+					{
+
+						Write<bool>(entAddress + OFFSET_GLOW_ENABLE, true);
+						Write<int>(entAddress + OFFSET_GLOW_CONTEXT, 1);
+						Write<float>(entAddress + OFFSET_GLOW_COLORS, 0.f);
+						Write<float>(entAddress + OFFSET_GLOW_COLORS + 0x4, 0.f);
+						Write<float>(entAddress + OFFSET_GLOW_COLORS + 0x8, 255.f);
+
+						for (int offset = 0x2D0; offset <= 0x2E8; offset += 0x4) //beginning of glow is what i find in glow xref - 0x18, or -24 
+						{
+							Write<float>(entAddress + offset, FLT_MAX);
+						}		
+						Write<float>(entAddress + OFFSET_GLOW_RANGE, FLT_MAX);  //Write glow range
+
+					}
+					i += 1;
+
 				}
+
+
 			}
+			KeRestoreFloatingPointState(&save);
 		}
+
 	}
 	return Status;
 }
 
-void apexScanSigs()
-{
-	return;
-}
+
+
 
 
 /*VOID glowThread(IN PVOID StartContext)
@@ -539,6 +464,7 @@ void apexScanSigs()
 	float g;
 	float b;
 } */
+
 
 
 
@@ -579,7 +505,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 	}
 
 
-	apexScanSigs();
+
 
 
 
