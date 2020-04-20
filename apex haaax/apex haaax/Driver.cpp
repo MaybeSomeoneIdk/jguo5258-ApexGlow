@@ -306,11 +306,16 @@ NTSTATUS DispatchHandle()
 			KAPC_STATE apc;
 			KeStackAttachProcess(process, &apc);
 			BaseAddress = (ULONG64)GetUserModule(process, &programImage, isWow64);
-			BBScanSection("safdah", EntityList_Sig, 0xCC, sizeof(EntityList_Sig) - 1, (PVOID*)&OFFSET_ENTITYLIST, (PVOID)BaseAddress);
+			BBScanSection("safdah", EntityList_Sig, 0xCC, sizeof(EntityList_Sig) - 1, reinterpret_cast<PVOID*>(&OFFSET_ENTITYLIST), (PVOID64)BaseAddress);
+
+			//OFFSET_ENTITYLIST =	*(DWORD*)ResolveRelativeAddress((PVOID)OFFSET_ENTITYLIST, 10, 14);
+			OFFSET_ENTITYLIST = (DWORD64)(ResolveRelativeAddress((PVOID)OFFSET_ENTITYLIST, 10, 14));
 			KeUnstackDetachProcess(&apc);
-			OFFSET_ENTITYLIST += 10;
-			OFFSET_ENTITYLIST -= BaseAddress;
 			WriteRequest->extra[8] = OFFSET_ENTITYLIST;
+//			OFFSET_ENTITYLIST -= BaseAddress;
+			ObDereferenceObject(process);
+
+			WriteRequest->Signature[0] = 0x00;
 		}
 
 
@@ -348,7 +353,6 @@ NTSTATUS DispatchHandle()
 			WriteRequest->extra[5] = Status;
 			WriteRequest->extra[6] = BaseAddress;					/*	debug messsages		*/
 			WriteRequest->extra[7] = ProcessID;
-			WriteRequest->extra[8] = OFFSET_ENTITYLIST;
 			if (NT_SUCCESS(Status))
 			{
 				DbgPrint("PsLookupProcessByProcessId succedd\n");

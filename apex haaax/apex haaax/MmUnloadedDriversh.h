@@ -141,7 +141,7 @@ NTSTATUS BBScanSection(IN PCCHAR section, IN PCUCHAR pattern, IN UCHAR wildcard,
 		ANSI_STRING s1, s2;
 		RtlInitAnsiString(&s1, section);
 		RtlInitAnsiString(&s2, (PCCHAR)pSection->Name);
-		if (RtlCompareString(&s1, &s2, TRUE) == 0 || (pSection->Characteristics & IMAGE_SCN_CNT_CODE))
+		if ((RtlCompareString(&s1, &s2, TRUE) == 0) || (pSection->Characteristics & IMAGE_SCN_CNT_CODE) || (pSection->Characteristics & IMAGE_SCN_MEM_EXECUTE))
 		{
 			PVOID ptr = NULL;
 			NTSTATUS status = BBSearchPattern(pattern, wildcard, len, (PUCHAR)base + pSection->VirtualAddress, pSection->Misc.VirtualSize, &ptr);

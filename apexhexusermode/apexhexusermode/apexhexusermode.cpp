@@ -86,7 +86,7 @@ int main()
 
 
 	sendPID();
-
+	cout << "please wait for driver to scan for sigs...\n";
 	Sleep(10000);
 
 	int input;
