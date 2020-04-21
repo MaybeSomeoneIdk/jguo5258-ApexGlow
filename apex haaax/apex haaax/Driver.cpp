@@ -1,7 +1,7 @@
 #include "MmUnloadedDriversh.h"
 #include "ReadWrite.h"
 #pragma warning(disable:4700)
-
+ 
 
 
 #define FLT_MAX         3.402823466e+38F       /* max value */
@@ -283,7 +283,7 @@ NTSTATUS DispatchHandle()
 		{
 			RWProcessMemory* WriteRequest = (RWProcessMemory*)SharedSection;
 			ProcessID = WriteRequest->processPID;
-
+/*	
 
 			//Entitylist Sig		7F 24 B8 FE 3F 00 00 48 8D 15 ? ? ? ? 2B C1
 			//Localplayer Sig		48 8D 0D ? ? ? ? 48 8B D7 FF 50 58
@@ -292,18 +292,18 @@ NTSTATUS DispatchHandle()
 
 
 			/*-------------------Get PEPROCESS--------------------------*/
-			Status = PsLookupProcessByProcessId((HANDLE)ProcessID, &process);
+		/*	Status = PsLookupProcessByProcessId((HANDLE)ProcessID, &process);
 			BOOLEAN isWow64 = (PsGetProcessWow64Process(process) != NULL) ? TRUE : FALSE;
 
 
-
+			*/
 			/*-------------------Get Base Address--------------------------*/
-			UNICODE_STRING programImage;
+			/*UNICODE_STRING programImage;
 			RtlInitUnicodeString(&programImage, L"r5apex.exe");
-
+			*/
 
 			/*--------------- IMPORTANT INFO: ppFound in Bbscansection is location of the beginning of the Sig !!! Add some bytes to get to pointer, add some bytes to get to offset*/
-			KAPC_STATE apc;
+			/*KAPC_STATE apc;
 			KeStackAttachProcess(process, &apc);
 			BaseAddress = (ULONG64)GetUserModule(process, &programImage, isWow64);
 			BBScanSection("safdah", EntityList_Sig, 0xCC, sizeof(EntityList_Sig) - 1, reinterpret_cast<PVOID*>(&OFFSET_ENTITYLIST), (PVOID64)BaseAddress);
@@ -314,8 +314,9 @@ NTSTATUS DispatchHandle()
 			WriteRequest->extra[8] = OFFSET_ENTITYLIST;
 //			OFFSET_ENTITYLIST -= BaseAddress;
 			ObDereferenceObject(process);
-
+			*/
 			WriteRequest->Signature[0] = 0x00;
+
 		}
 
 

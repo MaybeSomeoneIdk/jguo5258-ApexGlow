@@ -1,24 +1,7 @@
 ﻿  Building 'apex haaax' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
   Stamping x64\Release\apexhaaax.inf
-  Stamping [Version] section with DriverVer=04/20/2020,6.48.3.156
-  Driver.cpp
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\undocumented.h(15,1): warning C4141: 'dllimport': used more than once
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\undocumented.h(70,1): warning C4141: 'dllimport': used more than once
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\undocumented.h(85,1): warning C4141: 'dllimport': used more than once
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\undocumented.h(326,1): warning C4141: 'dllimport': used more than once
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\MmUnloadedDriversh.h(10,1): warning C4005: 'STANDARD_RIGHTS_ALL': macro redefinition
-C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\km\wdm.h(5208): message : see previous definition of 'STANDARD_RIGHTS_ALL'
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\MmUnloadedDriversh.h(66,21): warning C4018: '<': signed/unsigned mismatch
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\MmUnloadedDriversh.h(264,10): warning C4244: 'return': conversion from 'NTSTATUS' to 'BOOLEAN', possible loss of data
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\MmUnloadedDriversh.h(358,10): warning C4189: 'cleared': local variable is initialized but not referenced
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\MmUnloadedDriversh.h(359,10): warning C4189: 'Filled': local variable is initialized but not referenced
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\Driver.cpp(55,37): warning C4100: 'pDriverObject': unreferenced formal parameter
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\Driver.cpp(392,11): warning C4101: 'Bytes': unreferenced local variable
-C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\apex haaax\Driver.cpp(498): warning C4706: assignment within conditional expression
+  Stamping [Version] section with DriverVer=04/20/2020,19.2.58.361
   apex haaax.vcxproj -> C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\x64\Release\apexhaaax.sys
-  Done Adding Additional Store
-  Successfully signed: C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\x64\Release\apexhaaax.sys
-  
   Driver is a Universal Driver.
   .........................
   Signability test complete.
