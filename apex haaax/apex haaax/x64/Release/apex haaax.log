@@ -1,7 +1,10 @@
 ﻿  Building 'apex haaax' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
   Stamping x64\Release\apexhaaax.inf
-  Stamping [Version] section with DriverVer=04/20/2020,19.2.58.361
+  Stamping [Version] section with DriverVer=04/22/2020,20.15.42.29
   apex haaax.vcxproj -> C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\x64\Release\apexhaaax.sys
+  Done Adding Additional Store
+  Successfully signed: C:\Users\jguo5\OneDrive\Documents\GitHub\jguo5258-wholesome\apex haaax\x64\Release\apexhaaax.sys
+  
   Driver is a Universal Driver.
   .........................
   Signability test complete.

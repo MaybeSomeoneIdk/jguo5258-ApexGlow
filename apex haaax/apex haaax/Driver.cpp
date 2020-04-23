@@ -213,11 +213,11 @@ VOID ReadSharedMemory()
 {
 	if (sectionHandle)
 	{
-		return; // if there already is a view of section, don't need to map again
+		return;
 	}
 	if (SharedSection)
 	{
-		ZwUnmapViewOfSection(NtCurrentProcess(), SharedSection);
+		ZwUnmapViewOfSection(NtCurrentProcess(), SharedSection); //map new section view afterwards
 	}
 	SIZE_T ViewSize = 1024 * 10;
 
@@ -257,9 +257,9 @@ NTSTATUS DispatchHandle()
 	while (1)
 	{
 
-
-		KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
 		ReadSharedMemory();
+		KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
+
 
 
 
@@ -283,38 +283,51 @@ NTSTATUS DispatchHandle()
 		{
 			RWProcessMemory* WriteRequest = (RWProcessMemory*)SharedSection;
 			ProcessID = WriteRequest->processPID;
-/*	
+
+
+
+
+			KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
 
 			//Entitylist Sig		7F 24 B8 FE 3F 00 00 48 8D 15 ? ? ? ? 2B C1
 			//Localplayer Sig		48 8D 0D ? ? ? ? 48 8B D7 FF 50 58
-
 			UCHAR EntityList_Sig[] = "\x7F\x24\xB8\xFE\x3F\x00\x00\x48\x8D\x15\xCC\xCC\xCC\xCC\x2B\xC1";
 
+			KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
 
 			/*-------------------Get PEPROCESS--------------------------*/
-		/*	Status = PsLookupProcessByProcessId((HANDLE)ProcessID, &process);
+
+			Status = PsLookupProcessByProcessId((HANDLE)ProcessID, &process);
 			BOOLEAN isWow64 = (PsGetProcessWow64Process(process) != NULL) ? TRUE : FALSE;
+			DbgPrint("status PEPROCESS is: %i \n", Status);
 
 
-			*/
 			/*-------------------Get Base Address--------------------------*/
-			/*UNICODE_STRING programImage;
+			UNICODE_STRING programImage;
 			RtlInitUnicodeString(&programImage, L"r5apex.exe");
-			*/
+			
 
 			/*--------------- IMPORTANT INFO: ppFound in Bbscansection is location of the beginning of the Sig !!! Add some bytes to get to pointer, add some bytes to get to offset*/
-			/*KAPC_STATE apc;
+			KAPC_STATE apc;
 			KeStackAttachProcess(process, &apc);
-			BaseAddress = (ULONG64)GetUserModule(process, &programImage, isWow64);
-			BBScanSection("safdah", EntityList_Sig, 0xCC, sizeof(EntityList_Sig) - 1, reinterpret_cast<PVOID*>(&OFFSET_ENTITYLIST), (PVOID64)BaseAddress);
+			BaseAddress = (ULONG64)GetUserModule(process, &programImage, isWow64); //BSOD problem line
+			DbgPrint("Base Address is: %p \n", BaseAddress);
 
-			//OFFSET_ENTITYLIST =	*(DWORD*)ResolveRelativeAddress((PVOID)OFFSET_ENTITYLIST, 10, 14);
-			OFFSET_ENTITYLIST = (DWORD64)(ResolveRelativeAddress((PVOID)OFFSET_ENTITYLIST, 10, 14));
+			ULONG64 Entity1 = NULL;
+			BBScanSection("safdah", EntityList_Sig, 0xCC, sizeof(EntityList_Sig) - 1, reinterpret_cast<PVOID*>(&Entity1), (PVOID64)BaseAddress);
+			KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
+
+			OFFSET_ENTITYLIST =	(ULONG64)ResolveRelativeAddress((PVOID)Entity1, 10, 14);
+			OFFSET_ENTITYLIST -= BaseAddress;
+			DbgPrint("Entitylist offset is: %i ", OFFSET_ENTITYLIST);
+		
 			KeUnstackDetachProcess(&apc);
-			WriteRequest->extra[8] = OFFSET_ENTITYLIST;
-//			OFFSET_ENTITYLIST -= BaseAddress;
-			ObDereferenceObject(process);
-			*/
+			DbgPrint("reached 3\n");
+
+			if (STATUS_SUCCESS(Status))
+			{
+				ObDereferenceObject(process);
+			}
 			WriteRequest->Signature[0] = 0x00;
 
 		}
@@ -351,9 +364,6 @@ NTSTATUS DispatchHandle()
 			//pslookupprocessbyprocessid works
 
 
-			WriteRequest->extra[5] = Status;
-			WriteRequest->extra[6] = BaseAddress;					/*	debug messsages		*/
-			WriteRequest->extra[7] = ProcessID;
 			if (NT_SUCCESS(Status))
 			{
 				DbgPrint("PsLookupProcessByProcessId succedd\n");

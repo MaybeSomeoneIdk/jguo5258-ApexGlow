@@ -39,7 +39,7 @@ void sendPID()
 	cout << "sent process id: " << proto.processPID << endl;
 
 	RtlCopyMemory(pointerToBuffer, &proto, sizeof(proto));
-
+	Sleep(11000);
 	return;
 }
 
@@ -58,14 +58,7 @@ void glowEnable(int type) //60 for player only, 10000 for player and item, 3 for
 
 	RtlCopyMemory(pointerToBuffer, &proto, sizeof(proto));
 
-	Sleep(4000);
 
-	cout << "status peprocess is: " << std::dec << pointerToBuffer->extra[5] << endl;
-	cout << "base address is: " << std::hex << pointerToBuffer->extra[6] << endl;
-	cout << "Process ID is: " << std::dec << pointerToBuffer->extra[7] << endl;
-	cout << "Entity pointer offset is: " << pointerToBuffer->extra[8] << endl;
-	cout << "Entity pointer value is: " << pointerToBuffer->extra[9] << endl;
-	cout << "current IRQL level is: " << pointerToBuffer->MyChars[0] << endl;
 	UnmapViewOfFile(pointerToBuffer);
 	return;
 }

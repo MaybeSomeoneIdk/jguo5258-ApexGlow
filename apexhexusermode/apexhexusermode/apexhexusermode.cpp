@@ -84,10 +84,9 @@ int main()
 	}
 	ProcessID = getProcId(L"r5apex.exe");//set pid
 
-
-	sendPID();
 	cout << "please wait for driver to scan for sigs...\n";
-	Sleep(10000);
+	sendPID();
+
 
 	int input;
 	while (1)
