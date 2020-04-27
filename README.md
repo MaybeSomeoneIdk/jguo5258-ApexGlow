@@ -17,3 +17,6 @@ press 4 for all entity glow
 press 5 for only item glow
 
 
+This is my first kernel hack. It is very disorganized and it does not have complicated features. I am currently working on a much better private hacks. Have fun, and give me credits if you want to distribute it.
+
+
