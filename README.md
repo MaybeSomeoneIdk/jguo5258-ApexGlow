@@ -1,5 +1,7 @@
 # jguo5258-wholesome
-apex legends hax
+apex legends hack
+
+I abandoned this project, currently working on something else
 
 1. launch with kdmapper before the game
 2. launch apex legends
